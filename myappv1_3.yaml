@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa
+  namespace: go
+spec:
+  minReplicas: 3  #最小pod数量
+  maxReplicas: 10 #最大pod数量
+  targetCPUUtilizationPercentage: 2 # CPU使用率指标
+  scaleTargetRef:   # 指定要控制的nginx信息
+    apiVersion: apps/v1 # 注意不要写错啦
+    kind: Deployment
+    name: mydemo-deployment

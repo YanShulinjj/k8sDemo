@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  mysql:
+    image: mysql
+    container_name: mysql57
+    environment:
+      MYSQL_ROOT_PASSWORD: '19990221'
+      MYSQL_DATABASE: 'golang_mysql'
+    ports:
+      - "3306:3306"
+    volumes:
+      - /root/myfile/mysql/conf:/etc/mysql/conf.d
+      - /root/myfile/mysql/logs:/logs
+      - /root/myfile/mysql/data:/var/lib/mysql
+    networks:
+      - app_net
+  redis:
+    image: redis
+    container_name: redisdemo
+    ports:
+      - "6381:6379"
+    volumes:
+      - /root/myfile/redis/data:/data
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+    networks:
+      - app_net
+  microService:
+    image: app:1.0
+    container_name: app3
+    ports:
+      - "7000:8080"
+    networks:
+      - app_net
+    depends_on: # 该服务依赖于mysql服务
+      - mysql
+      - redis
+    command:
+      - /bin/bash
+      - -c
+      - |
+        sh ./wait-for redis:6379 -- echo "redis successfully run!"
+        sh ./wait-for mysql:3306 -- ./main
+#    command: sh ./wait-for mysql:3306 sh
+networks:
+  app_net:
+

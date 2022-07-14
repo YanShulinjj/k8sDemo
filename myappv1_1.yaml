@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: go
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: go
+spec:
+  clusterIP: 10.97.97.97 #固定svc的内网ip
+  sessionAffinity: ClientIP  # 来自同一个IP的请求，使用同一个pod响应
+  type: ClusterIP
+  selector:
+    app: mydemo-mysql
+  ports:
+    - port: 3306  #service端口
+      protocol: TCP
+      targetPort: 3306 #pod内的端口
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mydemo-mysql
+  template:
+    metadata:
+      labels:
+        app: mydemo-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-conf-volume
+              mountPath: /etc/mysql/conf.d
+            - name: mysql-data-volume
+              mountPath: /var/lib/mysql
+            - name: mysql-logs-volume
+              mountPath: /logs
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "19990221"
+            - name: MYSQL_DATABASE
+              value: "golang_mysql"
+      volumes:
+        - name: mysql-conf-volume
+          nfs:
+            server: 192.168.169.100  #nfs服务器地址
+            path: /root/data/mysql/conf #共享文件路径
+        - name: mysql-data-volume
+          nfs:
+            server: 192.168.169.100  #nfs服务器地址
+            path: /root/data/mysql/data #共享文件路径
+        - name: mysql-logs-volume
+          nfs:
+            server: 192.168.169.100  #nfs服务器地址
+            path: /root/data/mysql/logs #共享文件路径
+
+---
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: go
+spec:
+  clusterIP: 10.98.98.98 #固定svc的内网ip
+  sessionAffinity: ClientIP  # 来自同一个IP的请求，使用同一个pod响应
+  type: ClusterIP
+  selector:
+    app: mydemo-redis
+  ports:
+    - port: 6379  #service端口
+      protocol: TCP
+      targetPort: 6379 #pod内的端口
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  namespace: go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mydemo-redis
+  template:
+    metadata:
+      labels:
+        app: mydemo-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.0.8
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-data-volume
+              mountPath: /data
+          env:
+            - name:  TZ
+              value: Asia/Shanghai
+            - name: LANG
+              value: en_US.UTF-8
+      volumes:
+        - name: redis-data-volume
+          nfs:
+            server: 192.168.169.100  #nfs服务器地址
+            path: /root/data/redis/data/ #共享文件路径
